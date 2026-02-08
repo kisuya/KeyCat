@@ -7,7 +7,6 @@ DerivedData/
 .netrc
 build/
 
-# Shortcut YAML files in Defaults/ are synced from shortcuts/ by Scripts/sync-shortcuts.sh
+# YAML files in Defaults/ are synced from shortcuts/ by Scripts/sync-shortcuts.sh
 # The source of truth is shortcuts/ at project root
 Sources/KeyCat/Resources/Defaults/*.yaml
-!Sources/KeyCat/Resources/Defaults/config.yaml

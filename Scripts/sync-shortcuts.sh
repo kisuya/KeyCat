@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Sync shortcut YAML files from shortcuts/ to Sources/KeyCat/Resources/Defaults/
+# Sync YAML files from shortcuts/ to Sources/KeyCat/Resources/Defaults/
 # This script should be run before building to ensure bundled shortcuts are up-to-date.
 # It can be invoked directly or via the SyncShortcuts SPM build plugin.
 
@@ -23,8 +23,6 @@ SYNCED=0
 for file in "$SHORTCUTS_DIR"/*.yaml "$SHORTCUTS_DIR"/*.yml; do
     [ -f "$file" ] || continue
     basename="$(basename "$file")"
-    # Skip config.yaml
-    [ "$basename" = "config.yaml" ] && continue
     dest="$DEFAULTS_DIR/$basename"
     # Only copy if source is newer than destination
     if [ ! -f "$dest" ] || [ "$file" -nt "$dest" ]; then
