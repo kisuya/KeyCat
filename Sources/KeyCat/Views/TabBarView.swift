@@ -11,6 +11,7 @@ struct TabBarView: View {
                     TabButton(
                         title: file.app,
                         icon: file.icon ?? AppConstants.defaultIcon,
+                        count: file.categories.reduce(0) { $0 + $1.shortcuts.count },
                         isSelected: file.app == selectedApp
                     ) {
                         selectedApp = file.app
@@ -26,6 +27,7 @@ struct TabBarView: View {
 private struct TabButton: View {
     let title: String
     let icon: String
+    let count: Int
     let isSelected: Bool
     let action: () -> Void
 
@@ -36,6 +38,16 @@ private struct TabButton: View {
                     .font(.caption)
                 Text(title)
                     .font(.subheadline)
+
+                Text("\(count)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(
+                        Capsule()
+                            .fill(.quaternary)
+                    )
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)

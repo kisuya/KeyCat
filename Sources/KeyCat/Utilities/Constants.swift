@@ -10,9 +10,18 @@ enum AppConstants {
         return home.appendingPathComponent(".config/keycat", isDirectory: true)
     }()
 
+    static let configFileName = "config.yaml"
+
+    static let configFilePath: URL = {
+        userConfigDirectory.appendingPathComponent(configFileName)
+    }()
+
     static let menuBarIcon = "keyboard.fill"
     static let defaultIcon = "app.dashed"
 
     static let yamlExtension = "yaml"
     static let ymlExtension = "yml"
+
+    static let wideViewScreenRatio: CGFloat = 0.7
+    static let wideViewMinColumnWidth: CGFloat = 300
 }

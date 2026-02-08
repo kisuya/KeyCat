@@ -111,6 +111,8 @@ struct SettingsFooterView: View {
                 }
                 .toggleStyle(.switch)
                 .controlSize(.mini)
+                .tint(.accentColor)
+                .id(appState.viewMode)
                 .help("넓은 보기 모드로 전환합니다 (⌘E)")
 
                 Spacer()
@@ -121,6 +123,7 @@ struct SettingsFooterView: View {
                 }
                 .toggleStyle(.switch)
                 .controlSize(.mini)
+                .tint(.accentColor)
                 .help("로그인 시 자동으로 실행합니다")
                 .onChange(of: launchAtLogin) {
                     LaunchAtLoginManager.toggle()
@@ -248,12 +251,11 @@ struct SettingsFooterView: View {
         let configURL = AppConstants.configFilePath
         let fileManager = FileManager.default
 
-        // Ensure the file exists
         if !fileManager.fileExists(atPath: configURL.path) {
             InitialSetup.copyDefaultConfigIfNeeded()
         }
 
-        NSWorkspace.shared.open(configURL)
+        openInVSCode(configURL)
     }
 
     private func copyPath() {
@@ -273,6 +275,22 @@ struct SettingsFooterView: View {
         MarkdownExporter.saveWithPanel(content: markdown)
     }
 
+    private func openInVSCode(_ url: URL) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/local/bin/code")
+        process.arguments = [url.path]
+        // Fallback paths for Apple Silicon / Homebrew
+        if !FileManager.default.fileExists(atPath: "/usr/local/bin/code") {
+            process.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/code")
+        }
+        do {
+            try process.run()
+        } catch {
+            // VSCode not found, fall back to system default
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     private func promptTemplateName() {
         let alert = NSAlert()
         alert.messageText = "새 템플릿 생성"
@@ -290,7 +308,7 @@ struct SettingsFooterView: View {
             guard !name.isEmpty else { return }
             do {
                 let url = try TemplateGenerator.writeTemplate(appName: name)
-                NSWorkspace.shared.open(url)
+                openInVSCode(url)
             } catch {
                 let errorAlert = NSAlert()
                 errorAlert.messageText = "템플릿 생성 실패"

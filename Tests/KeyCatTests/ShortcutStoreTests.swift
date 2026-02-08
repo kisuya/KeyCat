@@ -64,4 +64,54 @@ struct ShortcutStoreTests {
 
         #expect(store.selectedApp == "neovim")
     }
+
+    @Test("Applies tab order correctly")
+    func applyTabOrder() {
+        let store = ShortcutStore()
+        store.loadAll()
+
+        let order = ["yazi", "tmux"]
+        store.applyTabOrder(order)
+
+        let ordered = store.orderedFiles
+        #expect(ordered.count == store.files.count)
+        #expect(ordered[0].app == "yazi")
+        #expect(ordered[1].app == "tmux")
+    }
+
+    @Test("orderedFiles puts unordered apps alphabetically after ordered ones")
+    func orderedFilesAlphabetical() {
+        let store = ShortcutStore()
+        store.loadAll()
+
+        store.applyTabOrder(["tmux"])
+
+        let ordered = store.orderedFiles
+        #expect(ordered[0].app == "tmux")
+
+        let remaining = Array(ordered.dropFirst())
+        let remainingNames = remaining.map(\.app)
+        let sorted = remainingNames.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        #expect(remainingNames == sorted)
+    }
+
+    @Test("orderedFiles without tab order returns all files")
+    func orderedFilesNoOrder() {
+        let store = ShortcutStore()
+        store.loadAll()
+
+        let ordered = store.orderedFiles
+        #expect(ordered.count == store.files.count)
+    }
+
+    @Test("allFilteredFiles returns all apps filtered by query")
+    func allFilteredFiles() {
+        let store = ShortcutStore()
+        store.loadAll()
+        store.searchQuery = "detach"
+
+        let results = store.allFilteredFiles
+        #expect(!results.isEmpty)
+        #expect(results.contains(where: { $0.app == "tmux" }))
+    }
 }

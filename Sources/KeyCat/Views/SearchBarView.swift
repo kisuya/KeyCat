@@ -14,15 +14,14 @@ struct SearchBarView: View {
                 .focused($isFocused)
                 .onSubmit { }
 
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+            Button {
+                query = ""
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
             }
+            .buttonStyle(.plain)
+            .opacity(query.isEmpty ? 0 : 1)
         }
         .padding(10)
         .background(

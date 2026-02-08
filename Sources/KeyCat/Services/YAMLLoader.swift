@@ -18,6 +18,11 @@ enum YAMLLoaderError: Error, LocalizedError {
     }
 }
 
+struct YAMLLoadResult {
+    let files: [(file: ShortcutFile, source: ShortcutSource)]
+    let errors: [YAMLLoadError]
+}
+
 final class YAMLLoader {
     func loadBundledFiles() -> [ShortcutFile] {
         guard let resourceURL = Bundle.module.url(
@@ -27,20 +32,24 @@ final class YAMLLoader {
             return []
         }
 
-        return loadFilesFromDirectory(resourceURL)
+        return loadFilesFromDirectory(resourceURL).compactMap { $0.file }
     }
 
-    func loadUserFiles() -> [ShortcutFile] {
+    func loadUserFiles() -> (files: [ShortcutFile], errors: [YAMLLoadError]) {
         let userDir = AppConstants.userConfigDirectory
         guard FileManager.default.fileExists(atPath: userDir.path) else {
-            return []
+            return ([], [])
         }
-        return loadFilesFromDirectory(userDir)
+        let results = loadFilesFromDirectory(userDir)
+        let files = results.compactMap(\.file)
+        let errors = results.compactMap(\.error)
+        return (files, errors)
     }
 
-    func loadAllFiles() -> [(file: ShortcutFile, source: ShortcutSource)] {
+    func loadAllFiles() -> YAMLLoadResult {
         let bundled = loadBundledFiles().map { (file: $0, source: ShortcutSource.bundled) }
-        let user = loadUserFiles().map { (file: $0, source: ShortcutSource.user) }
+        let userResult = loadUserFiles()
+        let user = userResult.files.map { (file: $0, source: ShortcutSource.user) }
 
         var result: [(file: ShortcutFile, source: ShortcutSource)] = []
         var seenApps: Set<String> = []
@@ -54,7 +63,7 @@ final class YAMLLoader {
             result.append(item)
         }
 
-        return result
+        return YAMLLoadResult(files: result, errors: userResult.errors)
     }
 
     func parseYAML(from data: Data) throws -> ShortcutFile {
@@ -62,7 +71,12 @@ final class YAMLLoader {
         return try decoder.decode(ShortcutFile.self, from: data)
     }
 
-    private func loadFilesFromDirectory(_ directory: URL) -> [ShortcutFile] {
+    private struct LoadEntry {
+        let file: ShortcutFile?
+        let error: YAMLLoadError?
+    }
+
+    private func loadFilesFromDirectory(_ directory: URL) -> [LoadEntry] {
         let fileManager = FileManager.default
         guard let files = try? fileManager.contentsOfDirectory(
             at: directory,
@@ -74,12 +88,31 @@ final class YAMLLoader {
 
         let yamlFiles = files.filter { url in
             let ext = url.pathExtension.lowercased()
-            return ext == AppConstants.yamlExtension || ext == AppConstants.ymlExtension
+            let isYAML = ext == AppConstants.yamlExtension || ext == AppConstants.ymlExtension
+            let isConfig = url.lastPathComponent == AppConstants.configFileName
+            return isYAML && !isConfig
         }
 
-        return yamlFiles.compactMap { url in
-            guard let data = try? Data(contentsOf: url) else { return nil }
-            return try? parseYAML(from: data)
+        return yamlFiles.map { url in
+            let fileName = url.lastPathComponent
+
+            guard let data = try? Data(contentsOf: url) else {
+                return LoadEntry(
+                    file: nil,
+                    error: YAMLLoadError(fileName: fileName, message: "파일을 읽을 수 없습니다.")
+                )
+            }
+
+            let validation = YAMLValidator.validate(data: data, fileName: fileName)
+            if validation.isValid, let file = validation.file {
+                return LoadEntry(file: file, error: nil)
+            } else {
+                let message = validation.errors.joined(separator: "\n")
+                return LoadEntry(
+                    file: nil,
+                    error: YAMLLoadError(fileName: fileName, message: message)
+                )
+            }
         }
     }
 }

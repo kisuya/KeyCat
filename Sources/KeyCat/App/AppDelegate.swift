@@ -54,10 +54,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
         }
 
+        requestAccessibilityIfNeeded()
+
         hotkeyManager = HotkeyManager(config: appState.config.hotkey) { [weak self] in
             self?.toggleFromHotkey()
         }
         hotkeyManager?.start()
+    }
+
+    private func requestAccessibilityIfNeeded() {
+        let trusted = AXIsProcessTrusted()
+        if !trusted {
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
+            AXIsProcessTrustedWithOptions(options)
+
+            // 권한 부여 후 핫키 재시작을 위해 폴링
+            DispatchQueue.global().async { [weak self] in
+                for _ in 0..<30 {
+                    sleep(2)
+                    if AXIsProcessTrusted() {
+                        DispatchQueue.main.async {
+                            self?.hotkeyManager?.stop()
+                            self?.hotkeyManager?.start()
+                        }
+                        return
+                    }
+                }
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

@@ -1,0 +1,12 @@
+tab_order:
+  - tmux
+  - neovim
+  - lazygit
+  - yazi
+
+hotkey:
+  key: "k"
+  modifiers: ["ctrl", "shift"]
+
+preferences:
+  default_view: compact

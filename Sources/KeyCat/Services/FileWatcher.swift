@@ -5,9 +5,16 @@ final class FileWatcher {
     private var dispatchSource: DispatchSourceFileSystemObject?
     private let directoryURL: URL
     private let onChange: () -> Void
+    private let debounceInterval: TimeInterval
+    private var debounceWorkItem: DispatchWorkItem?
 
-    init(directory: URL, onChange: @escaping () -> Void) {
+    init(
+        directory: URL,
+        debounceInterval: TimeInterval = 0.5,
+        onChange: @escaping () -> Void
+    ) {
         self.directoryURL = directory
+        self.debounceInterval = debounceInterval
         self.onChange = onChange
     }
 
@@ -24,7 +31,7 @@ final class FileWatcher {
         )
 
         source.setEventHandler { [weak self] in
-            self?.onChange()
+            self?.scheduleChange()
         }
 
         source.setCancelHandler { [weak self] in
@@ -40,8 +47,19 @@ final class FileWatcher {
     }
 
     func stop() {
+        debounceWorkItem?.cancel()
+        debounceWorkItem = nil
         dispatchSource?.cancel()
         dispatchSource = nil
+    }
+
+    private func scheduleChange() {
+        debounceWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.onChange()
+        }
+        debounceWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + debounceInterval, execute: workItem)
     }
 
     private func ensureDirectoryExists() {

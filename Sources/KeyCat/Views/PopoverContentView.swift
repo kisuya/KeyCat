@@ -46,7 +46,13 @@ struct PopoverContentView: View {
         )
         .onAppear {
             isSearchFocused = true
-            selectedIndex = -1
+            selectedIndex = 0
+        }
+        .onChange(of: store.searchQuery) {
+            clampSelection()
+        }
+        .onChange(of: appState.collapsedCategories) {
+            clampSelection()
         }
         .onKeyPress(.upArrow) {
             moveSelection(by: -1)
@@ -66,6 +72,10 @@ struct PopoverContentView: View {
         }
         .onKeyPress(.return) {
             copySelectedKey()
+            return .handled
+        }
+        .onKeyPress(.tab) {
+            switchTab(by: 1)
             return .handled
         }
         .onKeyPress(characters: .init(charactersIn: "e")) { press in
@@ -102,10 +112,19 @@ struct PopoverContentView: View {
     }
 
     private func moveSelection(by delta: Int) {
-        let shortcuts = allVisibleShortcuts
-        guard !shortcuts.isEmpty else { return }
+        let count = allVisibleShortcuts.count
+        guard count > 0 else { return }
         let newIndex = selectedIndex + delta
-        selectedIndex = max(-1, min(newIndex, shortcuts.count - 1))
+        selectedIndex = max(0, min(newIndex, count - 1))
+    }
+
+    private func clampSelection() {
+        let count = allVisibleShortcuts.count
+        if count == 0 {
+            selectedIndex = 0
+        } else if selectedIndex >= count {
+            selectedIndex = count - 1
+        }
     }
 
     private func switchTab(by delta: Int) {
@@ -114,14 +133,14 @@ struct PopoverContentView: View {
         guard let currentIndex = ordered.firstIndex(where: { $0.app == store.selectedApp }) else { return }
         let newIndex = (currentIndex + delta + ordered.count) % ordered.count
         store.selectApp(ordered[newIndex].app)
-        selectedIndex = -1
+        selectedIndex = 0
     }
 
     private func switchToTab(index: Int) {
         let ordered = store.orderedFiles
         guard index < ordered.count else { return }
         store.selectApp(ordered[index].app)
-        selectedIndex = -1
+        selectedIndex = 0
     }
 
     private func copySelectedKey() {
