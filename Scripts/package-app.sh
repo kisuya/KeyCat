@@ -3,6 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+echo "Syncing shortcuts..."
+./Scripts/sync-shortcuts.sh
+
 echo "Building release binary..."
 swift build -c release
 

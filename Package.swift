@@ -17,12 +17,20 @@ let package = Package(
             path: "Sources/KeyCat",
             resources: [
                 .copy("Resources/Defaults")
+            ],
+            plugins: [
+                .plugin(name: "SyncShortcuts")
             ]
         ),
         .testTarget(
             name: "KeyCatTests",
             dependencies: ["KeyCat", "Yams"],
             path: "Tests/KeyCatTests"
+        ),
+        .plugin(
+            name: "SyncShortcuts",
+            capability: .buildTool(),
+            path: "Plugins/SyncShortcuts"
         )
     ]
 )
