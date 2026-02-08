@@ -3,6 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+echo "Syncing shortcuts..."
+./Scripts/sync-shortcuts.sh
+
 echo "Building KeyCat (release)..."
 swift build -c release
 
