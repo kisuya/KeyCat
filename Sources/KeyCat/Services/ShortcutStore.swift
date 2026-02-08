@@ -4,6 +4,7 @@ import SwiftUI
 @Observable
 final class ShortcutStore {
     private(set) var files: [ShortcutFile] = []
+    private(set) var fileSources: [String: ShortcutSource] = [:]
     private(set) var selectedApp: String = ""
     var searchQuery: String = ""
     private(set) var tabOrder: [String] = []
@@ -54,14 +55,26 @@ final class ShortcutStore {
         }
     }
 
+    func sourceFor(_ app: String) -> ShortcutSource {
+        fileSources[app.lowercased()] ?? .bundled
+    }
+
     func loadAll() {
         let result = loader.loadAllFiles()
         files = result.files.map(\.file)
+        fileSources = Dictionary(
+            result.files.map { ($0.file.app.lowercased(), $0.source) },
+            uniquingKeysWith: { _, last in last }
+        )
         loadErrors = result.errors
 
         if !files.isEmpty, !appNames.contains(selectedApp) {
             selectedApp = files[0].app
         }
+    }
+
+    func hasBundledVersion(for app: String) -> Bool {
+        loader.loadBundledFiles().contains { $0.app.lowercased() == app.lowercased() }
     }
 
     func selectApp(_ app: String) {
